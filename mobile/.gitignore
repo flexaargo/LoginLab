@@ -1,0 +1,17 @@
+# Xcode user-specific files
+xcuserdata/
+
+# Xcode build artifacts
+build/
+DerivedData/
+*.xcworkspace
+!default.xcworkspace
+
+# Swift Package Manager
+.build/
+.swiftpm/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
