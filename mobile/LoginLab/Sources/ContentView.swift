@@ -37,9 +37,6 @@ struct ContentView: View {
         Label("Account", systemImage: "person")
       }
     }
-    .fullScreenCover(isPresented: isSignInPresented) {
-      SignInView()
-    }
   }
 }
 

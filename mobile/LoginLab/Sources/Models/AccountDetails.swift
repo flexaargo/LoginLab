@@ -7,10 +7,10 @@
 import Foundation
 import SwiftUI
 
-public struct AccountDetails: Hashable, Sendable {
+public nonisolated struct AccountDetails: Hashable, Sendable {
   public let userID: String
-  public let email: String?
-  public let name: String?
+  public let email: String
+  public let name: String
 }
 
 public extension EnvironmentValues {

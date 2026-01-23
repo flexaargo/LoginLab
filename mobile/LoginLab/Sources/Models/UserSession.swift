@@ -7,11 +7,10 @@
 import Foundation
 import SwiftUI
 
-public struct UserSession: Hashable, Sendable {
+nonisolated public struct UserSession: Hashable, Sendable {
   public let accountDetails: AccountDetails
   public let accessToken: String
   public let refreshToken: String
-  public let expirationDate: Date
 }
 
 public extension EnvironmentValues {
