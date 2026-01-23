@@ -17,7 +17,9 @@ private nonisolated struct SignInRequest: Encodable {
 nonisolated struct SignInResponse: Decodable {
   let user: UserResponse
   let accessToken: String
+  let accessTokenExpiresAt: Date
   let refreshToken: String
+  let refreshTokenExpiresAt: Date
 }
 
 nonisolated struct UserResponse: Decodable {
@@ -46,9 +48,9 @@ extension NetworkingClient {
     let response: SignInResponse = try await request(
       path: "/auth/signin",
       method: .post,
-      body: requestBody
+      body: requestBody,
+      decoder: .epochSeconds
     )
-
     return response
   }
 }

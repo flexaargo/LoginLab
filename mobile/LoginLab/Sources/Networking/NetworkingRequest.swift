@@ -12,19 +12,22 @@ nonisolated struct NetworkingRequest: Sendable {
   var body: Data?
   var headers: [String: String]
   var queryItems: [URLQueryItem]?
+  var decoder: JSONDecoder?
 
   /// Creates a request without a body.
   init(
     path: String,
     method: HTTPMethod,
     headers: [String: String] = [:],
-    queryItems: [URLQueryItem]? = nil
+    queryItems: [URLQueryItem]? = nil,
+    decoder: JSONDecoder? = nil
   ) {
     self.path = path
     self.method = method
     self.body = nil
     self.headers = headers
     self.queryItems = queryItems
+    self.decoder = decoder
   }
 
   /// Creates a request with an encodable body.
@@ -34,19 +37,22 @@ nonisolated struct NetworkingRequest: Sendable {
   ///   - body: An encodable request body (will be JSON encoded)
   ///   - headers: Custom headers
   ///   - queryItems: Optional query parameters
+  ///   - decoder: Optional JSON decoder for the response (defaults to standard decoder)
   /// - Throws: Encoding errors if the body cannot be encoded
   init<B: Encodable>(
     path: String,
     method: HTTPMethod,
     body: B,
     headers: [String: String] = [:],
-    queryItems: [URLQueryItem]? = nil
+    queryItems: [URLQueryItem]? = nil,
+    decoder: JSONDecoder? = nil
   ) throws {
     self.path = path
     self.method = method
     self.body = try JSONEncoder().encode(body)
     self.headers = headers
     self.queryItems = queryItems
+    self.decoder = decoder
   }
 
   /// Creates a request with a raw Data body.
@@ -55,13 +61,15 @@ nonisolated struct NetworkingRequest: Sendable {
     method: HTTPMethod,
     body: Data? = nil,
     headers: [String: String] = [:],
-    queryItems: [URLQueryItem]? = nil
+    queryItems: [URLQueryItem]? = nil,
+    decoder: JSONDecoder? = nil
   ) {
     self.path = path
     self.method = method
     self.body = body
     self.headers = headers
     self.queryItems = queryItems
+    self.decoder = decoder
   }
 
   /// Converts the request to a `URLRequest` ready for use with `URLSession`.

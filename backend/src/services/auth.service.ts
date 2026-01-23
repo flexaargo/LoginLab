@@ -64,24 +64,34 @@ interface CreateSessionOptions {
   ipAddress?: string;
 }
 
+interface Session {
+  /** The access token for the session. */
+  accessToken: string;
+  /** Expiration timestamp in seconds since epoch. */
+  accessTokenExpiresAt: number;
+  /** The refresh token for the session. */
+  refreshToken: string;
+  /** Expiration timestamp in seconds since epoch. */
+  refreshTokenExpiresAt: number;
+}
+
 /**
  * Creates a new session for a user and returns access/refresh tokens.
  */
-export async function createSession(options: CreateSessionOptions) {
+export async function createSession(options: CreateSessionOptions): Promise<Session> {
   const { userId, userAgent, deviceName, ipAddress } = options;
-  const accessToken = generateAccessToken(userId);
-  const refreshToken = generateRefreshToken();
+  const { accessToken, expiresAt: accessTokenExpiresAt } = generateAccessToken(userId);
+  const { refreshToken, expiresAt: refreshTokenExpiresAt } = generateRefreshToken();
   const refreshTokenHash = hashRefreshToken(refreshToken);
-  const refreshTokenExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
 
   await db.insert(sessions).values({
     userId,
     refreshTokenHash,
-    refreshTokenExpiresAt,
+    refreshTokenExpiresAt: new Date(refreshTokenExpiresAt * 1000),
     userAgent,
     deviceName,
     ipAddress,
   });
 
-  return { accessToken, refreshToken };
+  return { accessToken, accessTokenExpiresAt, refreshToken, refreshTokenExpiresAt };
 }

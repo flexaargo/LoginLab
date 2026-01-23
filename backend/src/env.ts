@@ -8,6 +8,7 @@ const envSchema = z.object({
   APPLE_CLIENT_ID: z.string(),
   APPLE_CLIENT_SECRET: z.string(),
   JWT_SECRET: z.string(),
+  REFRESH_TOKEN_PEPPER: z.string(),
 });
 
 export const env = envSchema.parse(process.env);

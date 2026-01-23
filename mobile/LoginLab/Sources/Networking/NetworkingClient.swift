@@ -40,6 +40,12 @@ actor NetworkingClient {
     self.baseURL = url
   }
 
+  /// The default JSON decoder for responses.
+  private static let defaultDecoder: JSONDecoder = {
+    let decoder = JSONDecoder()
+    return decoder
+  }()
+
   /// Performs a network request and decodes the response.
   /// This is the core method that extensions can build upon.
   /// The response type is inferred from the return type.
@@ -64,7 +70,8 @@ actor NetworkingClient {
       throw URLError(.badServerResponse)
     }
 
-    return try JSONDecoder().decode(T.self, from: data)
+    let decoder = request.decoder ?? Self.defaultDecoder
+    return try decoder.decode(T.self, from: data)
   }
 
   /// Performs a network request without expecting a response body.
@@ -80,13 +87,15 @@ actor NetworkingClient {
   ///   - body: An encodable request body (optional)
   ///   - queryItems: Optional query parameters
   ///   - additionalHeaders: Any additional headers to include
+  ///   - decoder: Optional JSON decoder for the response (defaults to standard decoder)
   /// - Returns: The decoded response of the inferred type
   func request<T: Decodable, B: Encodable>(
     path: String,
     method: HTTPMethod,
     body: B? = nil,
     queryItems: [URLQueryItem]? = nil,
-    additionalHeaders: [String: String] = [:]
+    additionalHeaders: [String: String] = [:],
+    decoder: JSONDecoder? = nil
   ) async throws -> T {
     let request: NetworkingRequest
     if let body {
@@ -95,14 +104,16 @@ actor NetworkingClient {
         method: method,
         body: body,
         headers: additionalHeaders,
-        queryItems: queryItems
+        queryItems: queryItems,
+        decoder: decoder
       )
     } else {
       request = NetworkingRequest(
         path: path,
         method: method,
         headers: additionalHeaders,
-        queryItems: queryItems
+        queryItems: queryItems,
+        decoder: decoder
       )
     }
 

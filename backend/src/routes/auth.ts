@@ -96,26 +96,26 @@ app.post('/signin', async (c) => {
         appleRefreshToken: tokenResponse.refresh_token,
       });
 
-      const { accessToken, refreshToken } = await createSession({
+      const session = await createSession({
         userId: user.id,
         userAgent: c.req.header('User-Agent'),
         deviceName: c.req.header('X-Device-Name'),
         ipAddress: getClientIp(c),
       });
-      return c.json({ user, accessToken, refreshToken }, 201);
+      return c.json({ user, ...session }, 201);
     }
 
     // Handle existing user sign-in
     await updateIdentityRefreshToken(existingIdentity.id, tokenResponse.refresh_token);
 
-    const { accessToken, refreshToken } = await createSession({
+    const session = await createSession({
       userId: existingIdentity.user.id,
       userAgent: c.req.header('User-Agent'),
       deviceName: c.req.header('X-Device-Name'),
       ipAddress: getClientIp(c),
     });
 
-    return c.json({ user: existingIdentity.user, accessToken, refreshToken });
+    return c.json({ user: existingIdentity.user, ...session });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return c.json({ error: 'Invalid request body', details: error.issues }, 400);
