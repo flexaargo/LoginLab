@@ -8,19 +8,16 @@ import SwiftUI
 
 struct SessionManagerScope<Content: View>: View {
   @State private var sessionManager: SessionManager
-  private let networkingClient: NetworkingClient
   private let content: Content
 
-  init(networkingClient: NetworkingClient, @ViewBuilder content: () -> Content) {
-    self.networkingClient = networkingClient
+  init(networkingClientProvider: NetworkingClientProvider, @ViewBuilder content: () -> Content) {
     self.content = content()
-    self._sessionManager = State(initialValue: SessionManager(networkingClient: networkingClient))
+    self._sessionManager = State(initialValue: SessionManager(networkingClientProvider: networkingClientProvider))
   }
 
   var body: some View {
     content
       .environment(sessionManager)
-      .environment(\.userSession, sessionManager.userSession)
-      .environment(\.accountDetails, sessionManager.userSession?.accountDetails)
+      .environment(\.accountDetails, sessionManager.accountDetails)
   }
 }

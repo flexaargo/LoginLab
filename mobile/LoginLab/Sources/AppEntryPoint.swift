@@ -12,7 +12,7 @@ struct AppEntryPoint: App {
 
   var body: some Scene {
     WindowGroup {
-      SessionManagerScope(networkingClient: networkingClientProvider.networkingClient) {
+      SessionManagerScope(networkingClientProvider: networkingClientProvider) {
         ContentView()
           .requiresSignIn()
       }

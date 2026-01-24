@@ -12,16 +12,7 @@ enum LoginLabTab: Hashable {
 }
 
 struct ContentView: View {
-  @Environment(\.userSession) private var userSession
   @State private var selectedTab = LoginLabTab.home
-
-  private var isSignInPresented: Binding<Bool> {
-    .init {
-      userSession == nil
-    } set: { _ in
-      // NO OP
-    }
-  }
 
   var body: some View {
     TabView(selection: $selectedTab) {

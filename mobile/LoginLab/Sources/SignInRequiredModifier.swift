@@ -7,11 +7,11 @@
 import SwiftUI
 
 struct SignInRequiredModifier: ViewModifier {
-  @Environment(\.userSession) private var userSession
+  @Environment(\.accountDetails) private var accountDetails
 
   private var isSignInPresented: Binding<Bool> {
     .init {
-      userSession == nil
+      accountDetails == nil
     } set: { _ in
       // NO OP
     }

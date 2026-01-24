@@ -7,8 +7,6 @@
 import SwiftUI
 
 struct AccountView: View {
-  @Environment(\.userSession) private var userSession
-
   var body: some View {
     NavigationStack {
       Form {}
