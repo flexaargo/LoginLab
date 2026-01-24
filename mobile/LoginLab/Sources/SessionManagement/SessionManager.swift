@@ -111,9 +111,17 @@ public final class SessionManager {
 
   /// Signs out the current user and clears stored session data.
   public func signOut() async throws {
-    try await storage.clear()
-    accountDetails = nil
-    userSession = nil
+    let networkingClient = networkingClientProvider.networkingClient
+    if let refreshToken = userSession?.refreshToken {
+      try await networkingClient.signOut(refreshToken: refreshToken.token)
+      try await storage.clear()
+      accountDetails = nil
+      userSession = nil
+    } else {
+      try await storage.clear()
+      accountDetails = nil
+      userSession = nil
+    }
   }
 
   public func refreshTokensIfNeeded() async throws {
