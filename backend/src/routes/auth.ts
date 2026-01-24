@@ -7,6 +7,7 @@ import { exchangeAppleAuthorizationCode, verifyAppleIdentityToken } from '../uti
 import {
   createSession,
   createUserAndIdentity,
+  refreshSession,
   updateIdentityRefreshToken,
 } from '../services/auth.service';
 
@@ -122,6 +123,38 @@ app.post('/signin', async (c) => {
     }
     const message = error instanceof Error ? error.message : 'Unknown error';
     console.error('Sign-in error:', message);
+    return c.json({ error: message }, 500);
+  }
+});
+
+const refreshSchema = z.object({
+  refreshToken: z.string().min(1),
+});
+
+app.post('/refresh', async (c) => {
+  try {
+    const body = refreshSchema.parse(await c.req.json());
+
+    const { session } = await refreshSession({
+      refreshToken: body.refreshToken,
+      userAgent: c.req.header('User-Agent'),
+      deviceName: c.req.header('X-Device-Name'),
+      ipAddress: getClientIp(c),
+    });
+
+    return c.json(session);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return c.json({ error: 'Invalid request body', details: error.issues }, 400);
+    }
+    const message = error instanceof Error ? error.message : 'Unknown error';
+
+    // Return 401 for auth-related errors
+    if (message === 'Invalid refresh token' || message === 'Refresh token expired') {
+      return c.json({ error: message }, 401);
+    }
+
+    console.error('Refresh error:', message);
     return c.json({ error: message }, 500);
   }
 });

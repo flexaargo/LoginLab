@@ -1,5 +1,5 @@
 import { db } from '../db';
-import { eq } from 'drizzle-orm';
+import { and, eq, isNull } from 'drizzle-orm';
 import { identities, sessions, users } from '../db/schema';
 import { generateAccessToken, generateRefreshToken, hashRefreshToken } from '../utils/tokens';
 
@@ -94,4 +94,99 @@ export async function createSession(options: CreateSessionOptions): Promise<Sess
   });
 
   return { accessToken, accessTokenExpiresAt, refreshToken, refreshTokenExpiresAt };
+}
+
+interface RefreshSessionOptions {
+  refreshToken: string;
+  userAgent?: string;
+  deviceName?: string;
+  ipAddress?: string;
+}
+
+interface RefreshSessionResult {
+  session: Session;
+  userId: string;
+}
+
+/**
+ * Refreshes a session using a valid refresh token.
+ * Implements token rotation: the old session is revoked and a new one is created.
+ */
+export async function refreshSession(
+  options: RefreshSessionOptions,
+): Promise<RefreshSessionResult> {
+  const { refreshToken, userAgent, deviceName, ipAddress } = options;
+  const refreshTokenHash = hashRefreshToken(refreshToken);
+
+  // Find the session by refresh token hash
+  const existingSession = await db.query.sessions.findFirst({
+    where: and(eq(sessions.refreshTokenHash, refreshTokenHash), isNull(sessions.revokedAt)),
+    with: { user: true },
+  });
+
+  if (!existingSession) {
+    throw new Error('Invalid refresh token');
+  }
+
+  // Check if the session is expired
+  if (existingSession.refreshTokenExpiresAt < new Date()) {
+    // Revoke the expired session
+    await db
+      .update(sessions)
+      .set({
+        revokedAt: new Date(),
+        revokeReason: 'expired',
+      })
+      .where(eq(sessions.id, existingSession.id));
+    throw new Error('Refresh token expired');
+  }
+
+  // Generate new tokens
+  const { accessToken, expiresAt: accessTokenExpiresAt } = generateAccessToken(
+    existingSession.userId,
+  );
+  const { refreshToken: newRefreshToken, expiresAt: refreshTokenExpiresAt } =
+    generateRefreshToken();
+  const newRefreshTokenHash = hashRefreshToken(newRefreshToken);
+
+  // Perform token rotation in a transaction
+  await db.transaction(async (tx) => {
+    // Create the new session
+    const [newSession] = await tx
+      .insert(sessions)
+      .values({
+        userId: existingSession.userId,
+        refreshTokenHash: newRefreshTokenHash,
+        refreshTokenExpiresAt: new Date(refreshTokenExpiresAt * 1000),
+        userAgent,
+        deviceName,
+        ipAddress,
+      })
+      .returning();
+
+    if (!newSession) {
+      throw new Error('Failed to create new session');
+    }
+
+    // Revoke the old session and link to the new one
+    await tx
+      .update(sessions)
+      .set({
+        revokedAt: new Date(),
+        revokeReason: 'rotated',
+        replacedBySessionId: newSession.id,
+        lastUsedAt: new Date(),
+      })
+      .where(eq(sessions.id, existingSession.id));
+  });
+
+  return {
+    session: {
+      accessToken,
+      accessTokenExpiresAt,
+      refreshToken: newRefreshToken,
+      refreshTokenExpiresAt,
+    },
+    userId: existingSession.userId,
+  };
 }
