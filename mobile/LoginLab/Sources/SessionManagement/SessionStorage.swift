@@ -13,6 +13,7 @@ actor SessionStorage {
     static let refreshToken = "com.loginhub.session.refreshToken"
     static let refreshTokenExpiresAt = "com.loginhub.session.refreshTokenExpiresAt"
     static let userID = "com.loginhub.session.userID"
+    static let displayName = "com.loginhub.session.displayName"
     static let email = "com.loginhub.session.email"
     static let name = "com.loginhub.session.name"
   }
@@ -50,21 +51,29 @@ actor SessionStorage {
   /// Stores user account details.
   func storeAccountDetails(_ accountDetails: AccountDetails) throws {
     try store(key: Keys.userID, value: accountDetails.userID)
+    try store(key: Keys.displayName, value: accountDetails.displayName)
     try store(key: Keys.email, value: accountDetails.email)
     try store(key: Keys.name, value: accountDetails.name)
   }
 
   /// Retrieves stored account details.
+  /// Returns nil if any required field is missing.
   func getAccountDetails() throws -> AccountDetails? {
     guard
       let userID = try retrieve(key: Keys.userID),
+      let displayName = try retrieve(key: Keys.displayName),
       let email = try retrieve(key: Keys.email),
       let name = try retrieve(key: Keys.name)
     else {
       return nil
     }
 
-    return AccountDetails(userID: userID, email: email, name: name)
+    return AccountDetails(
+      userID: userID,
+      displayName: displayName,
+      email: email,
+      name: name
+    )
   }
 
   /// Clears all stored session data.
@@ -72,6 +81,7 @@ actor SessionStorage {
     try delete(key: Keys.refreshToken)
     try delete(key: Keys.refreshTokenExpiresAt)
     try delete(key: Keys.userID)
+    try delete(key: Keys.displayName)
     try delete(key: Keys.email)
     try delete(key: Keys.name)
   }

@@ -11,6 +11,7 @@ import SwiftUI
 
 public nonisolated struct AccountDetails: Hashable, Sendable {
   public let userID: String
+  public let displayName: String
   public let email: String
   public let name: String
 }
@@ -26,6 +27,7 @@ public extension EnvironmentValues {
 extension AccountDetails {
   static let previewUser = AccountDetails(
     userID: UUID().uuidString,
+    displayName: "testuser",
     email: "test@example.com",
     name: "Test User"
   )

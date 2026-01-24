@@ -16,12 +16,37 @@ struct AccountView: View {
     if let accountDetails {
       NavigationStack {
         Form {
-          Section("Name") {
-            Text(accountDetails.name)
-          }
+          Section {
+            VStack {
+              Circle()
+                .frame(width: 96, height: 96)
+                .foregroundStyle(.gray.quinary)
 
-          Section("Email") {
-            Text(accountDetails.email)
+              Text(accountDetails.name)
+                .font(.title)
+                .fontWeight(.medium)
+                .multilineTextAlignment(.center)
+
+              Text(accountDetails.displayName)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+            }
+            .frame(maxWidth: .infinity, alignment: .center)
+          }
+          .listRowInsets(.init())
+          .listRowBackground(Color.clear)
+
+          Section("Account") {
+            Label {
+              VStack(alignment: .leading) {
+                Text("Email")
+                Text(accountDetails.email)
+                  .foregroundStyle(.secondary)
+              }
+            } icon: {
+              Image(systemName: "envelope")
+                .imageScale(.medium)
+            }
           }
 
           Section {
@@ -37,12 +62,10 @@ struct AccountView: View {
                 isSigningOut = false
               }
             } label: {
-              Text("Sign Out")
+              Text("Log out")
             }
           }
         }
-        .navigationTitle("Account")
-        .toolbarTitleDisplayMode(.inlineLarge)
       }
     }
   }

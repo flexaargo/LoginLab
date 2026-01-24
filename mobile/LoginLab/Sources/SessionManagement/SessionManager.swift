@@ -85,6 +85,7 @@ public final class SessionManager {
 
     let accountDetails = AccountDetails(
       userID: response.user.id,
+      displayName: response.user.displayName,
       email: response.user.email,
       name: response.user.fullName
     )
