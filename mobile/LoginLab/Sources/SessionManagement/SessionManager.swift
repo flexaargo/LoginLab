@@ -34,6 +34,11 @@ public final class SessionManager {
 
     Task {
       await initializeFromStorage()
+      do {
+        try await refreshTokensIfNeeded()
+      } catch {
+        print("🚨 Error refreshing tokens on startup: \(error)")
+      }
     }
   }
 
@@ -109,5 +114,40 @@ public final class SessionManager {
     try await storage.clear()
     accountDetails = nil
     userSession = nil
+  }
+
+  public func refreshTokensIfNeeded() async throws {
+    guard let userSession else { return }
+    let needsRefresh = {
+      if let accessTokenExpiresAt = userSession.accessToken?.expiresAt {
+        // expires in less than 90 seconds
+        return accessTokenExpiresAt.addingTimeInterval(-90) < Date.now
+      }
+      return true
+    }()
+    if needsRefresh {
+      try await forceRefreshTokens()
+    }
+  }
+
+  public func forceRefreshTokens() async throws {
+    guard let refreshToken = userSession?.refreshToken.token else { return }
+    let networkingClient = networkingClientProvider.networkingClient
+
+    let response = try await networkingClient.refreshTokens(refreshToken: refreshToken)
+
+    let userSession = UserSession(
+      accessToken: Token(
+        token: response.accessToken,
+        expiresAt: response.accessTokenExpiresAt
+      ),
+      refreshToken: Token(
+        token: response.refreshToken,
+        expiresAt: response.refreshTokenExpiresAt
+      )
+    )
+    try await storage.storeRefreshToken(userSession.refreshToken.token, expiresAt: userSession.refreshToken.expiresAt)
+
+    self.userSession = userSession
   }
 }
