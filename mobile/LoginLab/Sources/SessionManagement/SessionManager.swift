@@ -10,6 +10,9 @@ import Observation
 /// Manages the user session and provides access to the session.
 @Observable
 public final class SessionManager {
+  /// Whether the session manager has finished loading from storage.
+  public private(set) var isInitialized = false
+
   /// The account details for the current user.
   public private(set) var accountDetails: AccountDetails?
 
@@ -29,46 +32,37 @@ public final class SessionManager {
   init(networkingClientProvider: NetworkingClientProvider) {
     self.networkingClientProvider = networkingClientProvider
 
-    initializeAccountDetails()
-    initializeUserSession()
-  }
-
-  private func initializeAccountDetails() {
     Task {
-      do {
-        guard let accountDetails = try await storage.getAccountDetails() else {
-          print("⚠️ Account details not found in storage.")
-          return
-        }
-
-        self.accountDetails = accountDetails
-      } catch {
-        print("🚨 Error getting account details from storage: \(error)")
-        self.accountDetails = nil
-      }
+      await initializeFromStorage()
     }
   }
 
-  private func initializeUserSession() {
-    Task {
-      do {
-        guard
-          let refreshToken = try await storage.getRefreshToken(),
-          let refreshTokenExpiresAt = try await storage.getRefreshTokenExpiresAt()
-        else {
-          print("⚠️ Refresh token not found in storage.")
-          return
-        }
+  private func initializeFromStorage() async {
+    defer { isInitialized = true }
 
-        self.userSession = UserSession(
+    do {
+      // Load account details
+      if let storedAccountDetails = try await storage.getAccountDetails() {
+        accountDetails = storedAccountDetails
+      } else {
+        print("⚠️ Account details not found in storage.")
+      }
+
+      // Load refresh token
+      if let refreshToken = try await storage.getRefreshToken(),
+         let refreshTokenExpiresAt = try await storage.getRefreshTokenExpiresAt()
+      {
+        userSession = UserSession(
           refreshToken: Token(
             token: refreshToken,
             expiresAt: refreshTokenExpiresAt
           )
         )
-      } catch {
-        print("🚨 Error getting refresh token from storage: \(error)")
+      } else {
+        print("⚠️ Refresh token not found in storage.")
       }
+    } catch {
+      print("🚨 Error initializing from storage: \(error)")
     }
   }
 

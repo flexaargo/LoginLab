@@ -7,11 +7,12 @@
 import SwiftUI
 
 struct SignInRequiredModifier: ViewModifier {
-  @Environment(\.accountDetails) private var accountDetails
+  @Environment(SessionManager.self) private var sessionManager
 
+  /// Only present sign-in after initialization completes and there's no account.
   private var isSignInPresented: Binding<Bool> {
     .init {
-      accountDetails == nil
+      sessionManager.isInitialized && sessionManager.accountDetails == nil
     } set: { _ in
       // NO OP
     }
