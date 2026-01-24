@@ -7,7 +7,7 @@
 import Foundation
 import SwiftUI
 
-nonisolated public struct UserSession: Hashable, Sendable {
+public nonisolated struct UserSession: Hashable, Sendable {
   public let accountDetails: AccountDetails
   public let accessToken: String
   public let refreshToken: String
