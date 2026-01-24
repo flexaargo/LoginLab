@@ -6,13 +6,13 @@
 
 import Foundation
 
-nonisolated struct NetworkingRequest: Sendable {
-  var path: String
-  var method: HTTPMethod
-  var body: Data?
-  var headers: [String: String]
-  var queryItems: [URLQueryItem]?
-  var decoder: JSONDecoder?
+public nonisolated struct NetworkingRequest: Sendable {
+  public var path: String
+  public var method: HTTPMethod
+  public var body: Data?
+  public var headers: [String: String]
+  public var queryItems: [URLQueryItem]?
+  public var decoder: JSONDecoder?
 
   /// Creates a request without a body.
   init(

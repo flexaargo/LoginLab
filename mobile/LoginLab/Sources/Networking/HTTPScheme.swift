@@ -6,7 +6,7 @@
 
 import Foundation
 
-nonisolated enum HTTPScheme: String, Sendable {
+public nonisolated enum HTTPScheme: String, Sendable {
   case http
   case https
 }
