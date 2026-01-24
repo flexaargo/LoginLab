@@ -8,6 +8,7 @@ import {
   createSession,
   createUserAndIdentity,
   refreshSession,
+  revokeSession,
   updateIdentityRefreshToken,
 } from '../services/auth.service';
 
@@ -155,6 +156,33 @@ app.post('/refresh', async (c) => {
     }
 
     console.error('Refresh error:', message);
+    return c.json({ error: message }, 500);
+  }
+});
+
+const signOutSchema = z.object({
+  refreshToken: z.string().min(1),
+});
+
+app.post('/signout', async (c) => {
+  try {
+    const body = signOutSchema.parse(await c.req.json());
+
+    const revoked = await revokeSession(body.refreshToken);
+
+    if (!revoked) {
+      // Token not found or already revoked - still return success
+      // (don't leak whether the token existed)
+      return c.json({ success: true });
+    }
+
+    return c.json({ success: true });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return c.json({ error: 'Invalid request body', details: error.issues }, 400);
+    }
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Sign-out error:', message);
     return c.json({ error: message }, 500);
   }
 });

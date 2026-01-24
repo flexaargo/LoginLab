@@ -190,3 +190,32 @@ export async function refreshSession(
     userId: existingSession.userId,
   };
 }
+
+/**
+ * Revokes a session by its refresh token.
+ * Returns true if a session was revoked, false if the token was not found or already revoked.
+ */
+export async function revokeSession(refreshToken: string): Promise<boolean> {
+  const refreshTokenHash = hashRefreshToken(refreshToken);
+
+  // Find the session first
+  const existingSession = await db.query.sessions.findFirst({
+    where: and(eq(sessions.refreshTokenHash, refreshTokenHash), isNull(sessions.revokedAt)),
+  });
+
+  if (!existingSession) {
+    return false;
+  }
+
+  // Revoke the session
+  await db
+    .update(sessions)
+    .set({
+      revokedAt: new Date(),
+      revokeReason: 'logout',
+      lastUsedAt: new Date(),
+    })
+    .where(eq(sessions.id, existingSession.id));
+
+  return true;
+}
