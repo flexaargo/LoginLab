@@ -7,8 +7,8 @@
 import SwiftUI
 
 struct AccountView: View {
+  @Environment(\.signOut) private var signOut
   @Environment(\.accountDetails) private var accountDetails
-  @Environment(SessionManager.self) private var sessionManager
 
   @State private var isSigningOut = false
 
@@ -30,7 +30,7 @@ struct AccountView: View {
               isSigningOut = true
               Task {
                 do {
-                  try await sessionManager.signOut()
+                  try await signOut()
                 } catch {
                   print("🚨 Error signing out: \(error)")
                 }
@@ -50,4 +50,5 @@ struct AccountView: View {
 
 #Preview {
   AccountView()
+    .environment(\.accountDetails, AccountDetails.previewUser)
 }

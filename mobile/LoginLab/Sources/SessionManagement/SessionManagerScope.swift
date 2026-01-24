@@ -6,7 +6,7 @@
 
 import SwiftUI
 
-struct SessionManagerScope<Content: View>: View {
+public struct SessionManagerScope<Content: View>: View {
   @State private var sessionManager: SessionManager
   private let content: Content
 
@@ -15,8 +15,11 @@ struct SessionManagerScope<Content: View>: View {
     self._sessionManager = State(initialValue: SessionManager(networkingClientProvider: networkingClientProvider))
   }
 
-  var body: some View {
+  public var body: some View {
     content
+      .onSignOut {
+        try await sessionManager.signOut()
+      }
       .environment(sessionManager)
       .environment(\.accountDetails, sessionManager.accountDetails)
   }
