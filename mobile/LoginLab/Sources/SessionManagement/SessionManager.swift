@@ -110,6 +110,25 @@ public final class SessionManager {
     self.userSession = userSession
   }
 
+  /// Deletes the current user's account. Requires fresh Apple Sign In credentials.
+  /// Refreshes tokens if needed, calls the delete API, then clears local state.
+  public func deleteAccount(credentials: SignInWithAppleCredentials) async throws {
+    let networkingClient = networkingClientProvider.networkingClient
+    try await refreshTokensIfNeeded()
+    guard let accessToken = userSession?.accessToken?.token else {
+      throw SessionManagerError.notAuthenticated
+    }
+    try await networkingClient.deleteAccount(
+      accessToken: accessToken,
+      identityToken: credentials.identityToken,
+      authorizationCode: credentials.authorizationCode,
+      nonce: credentials.nonce
+    )
+    try await storage.clear()
+    accountDetails = nil
+    userSession = nil
+  }
+
   /// Signs out the current user and clears stored session data.
   public func signOut() async throws {
     let networkingClient = networkingClientProvider.networkingClient

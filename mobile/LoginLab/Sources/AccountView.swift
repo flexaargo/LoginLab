@@ -8,9 +8,14 @@ import SwiftUI
 
 struct AccountView: View {
   @Environment(\.signOut) private var signOut
+  @Environment(\.deleteAccount) private var deleteAccount
   @Environment(\.accountDetails) private var accountDetails
 
-  @State private var isSigningOut = false
+  /// A flag to prevent multiple mutating actions from being performed concurrently.
+  @State private var isPerformingMutatingAction = false
+
+  /// A flag to show the delete account confirmation dialog.
+  @State private var isDeletingAccount = false
 
   var body: some View {
     if let accountDetails {
@@ -51,22 +56,69 @@ struct AccountView: View {
 
           Section {
             Button(role: .destructive) {
-              guard !isSigningOut else { return }
-              isSigningOut = true
-              Task {
-                do {
-                  try await signOut()
-                } catch {
-                  print("🚨 Error signing out: \(error)")
-                }
-                isSigningOut = false
-              }
+              performSignOut()
             } label: {
-              Text("Log out")
+              Label {
+                Text("Log out")
+              } icon: {
+                Image(systemName: "rectangle.portrait.and.arrow.forward")
+                  .imageScale(.medium)
+              }
+              .foregroundStyle(.red)
+            }
+
+            Button(role: .destructive) {
+              isDeletingAccount = true
+            } label: {
+              Label {
+                Text("Delete account")
+              } icon: {
+                Image(systemName: "trash")
+                  .imageScale(.medium)
+              }
+              .foregroundStyle(.red)
+            }
+            .alert("Delete account", isPresented: $isDeletingAccount) {
+              Button("Delete", role: .destructive) {
+                performDeleteAccount()
+              }
+
+              Button("Nevermind", role: .cancel) {
+                isDeletingAccount = false
+              }
+            } message: {
+              Text("This will permanently delete your account and all associated data. This action cannot be undone.")
             }
           }
         }
       }
+    }
+  }
+
+  private func performSignOut() {
+    guard !isPerformingMutatingAction else { return }
+    isPerformingMutatingAction = true
+    Task {
+      do {
+        try await signOut()
+      } catch {
+        print("🚨 Error signing out: \(error)")
+      }
+      isPerformingMutatingAction = false
+    }
+  }
+
+  private func performDeleteAccount() {
+    guard !isPerformingMutatingAction else { return }
+    isDeletingAccount = false
+    isPerformingMutatingAction = true
+    Task {
+      do {
+        try await deleteAccount()
+      } catch {
+        print("🚨 Error deleting account: \(error)")
+      }
+      isPerformingMutatingAction = false
     }
   }
 }

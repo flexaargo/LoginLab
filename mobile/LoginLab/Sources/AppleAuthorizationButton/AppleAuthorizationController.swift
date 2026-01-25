@@ -22,8 +22,8 @@ enum AppleAuthorizationError: LocalizedError {
   }
 }
 
-struct AppleAuthorizationController {
-  func requestAuthorization(with scopes: [ASAuthorization.Scope]?, nonce: String?) async throws -> ASAuthorizationAppleIDCredential {
+public struct AppleAuthorizationController {
+  public func requestAuthorization(with scopes: [ASAuthorization.Scope]? = nil, nonce: String?) async throws -> ASAuthorizationAppleIDCredential {
     // Fail early if running in SwiftUI previews
     if ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1" {
       try await Task.sleep(for: .seconds(0.5))
