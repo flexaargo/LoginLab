@@ -1,6 +1,11 @@
 import { db } from '../db';
 import { and, eq, isNull } from 'drizzle-orm';
 import { identities, sessions, users } from '../db/schema';
+import {
+  exchangeAppleAuthorizationCode,
+  revokeAppleToken,
+  verifyAppleIdentityToken,
+} from '../utils/apple';
 import { generateAccessToken, generateRefreshToken, hashRefreshToken } from '../utils/tokens';
 
 interface CreateUserAndIdentityOptions {
@@ -189,6 +194,46 @@ export async function refreshSession(
     },
     userId: existingSession.userId,
   };
+}
+
+interface DeleteAccountOptions {
+  userId: string;
+  identityToken: string;
+  authorizationCode: string;
+  nonce: string;
+}
+
+/**
+ * Deletes the user's account.
+ * 1. Revokes the Apple token first (so the user's Apple ID is unlinked).
+ * 2. Deletes the user from our DB (identities and sessions cascade).
+ * If Apple revoke fails, we throw and do not delete. If delete fails after revoke,
+ * we have a partial state (Apple unlinked, user still in DB); callers may retry.
+ */
+export async function deleteAccount(options: DeleteAccountOptions): Promise<void> {
+  const { userId, identityToken, authorizationCode, nonce } = options;
+
+  const [identityTokenPayload, tokenResponse] = await Promise.all([
+    verifyAppleIdentityToken(identityToken, nonce),
+    exchangeAppleAuthorizationCode(authorizationCode),
+  ]);
+
+  const appleUserId = identityTokenPayload.sub;
+
+  const identity = await db.query.identities.findFirst({
+    where: and(
+      eq(identities.userId, userId),
+      eq(identities.provider, 'apple'),
+      eq(identities.providerUserId, appleUserId),
+    ),
+  });
+
+  if (!identity) {
+    throw new Error('Apple identity does not match the authenticated user');
+  }
+
+  await revokeAppleToken(tokenResponse.refresh_token);
+  await db.delete(users).where(eq(users.id, userId));
 }
 
 /**

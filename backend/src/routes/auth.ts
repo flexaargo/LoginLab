@@ -4,9 +4,11 @@ import { db } from '../db';
 import { and, eq } from 'drizzle-orm';
 import { identities } from '../db/schema';
 import { exchangeAppleAuthorizationCode, verifyAppleIdentityToken } from '../utils/apple';
+import { authMiddleware } from '../middleware/auth';
 import {
   createSession,
   createUserAndIdentity,
+  deleteAccount,
   refreshSession,
   revokeSession,
   updateIdentityRefreshToken,
@@ -156,6 +158,38 @@ app.post('/refresh', async (c) => {
     }
 
     console.error('Refresh error:', message);
+    return c.json({ error: message }, 500);
+  }
+});
+
+const deleteAccountSchema = z.object({
+  identityToken: z.string().min(1),
+  authorizationCode: z.string().min(1),
+  nonce: z.string().min(1),
+});
+
+app.post('/delete-account', authMiddleware, async (c) => {
+  try {
+    const body = deleteAccountSchema.parse(await c.req.json());
+    const userId = c.var.userId;
+
+    await deleteAccount({
+      userId,
+      identityToken: body.identityToken,
+      authorizationCode: body.authorizationCode,
+      nonce: body.nonce,
+    });
+
+    return c.json({ success: true });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return c.json({ error: 'Invalid request body', details: error.issues }, 400);
+    }
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    if (message === 'Apple identity does not match the authenticated user') {
+      return c.json({ error: message }, 403);
+    }
+    console.error('Delete account error:', message);
     return c.json({ error: message }, 500);
   }
 });

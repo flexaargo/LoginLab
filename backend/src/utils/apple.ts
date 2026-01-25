@@ -94,3 +94,30 @@ export async function exchangeAppleAuthorizationCode(
   const validated = appleAuthorizationCodeExchangeSchema.parse(data);
   return validated;
 }
+
+/**
+ * Revokes a refresh token with Apple.
+ * Call this before deleting user data so the user's Apple ID is unlinked from the app.
+ * @see https://developer.apple.com/documentation/sign_in_with_apple/revoking_tokens
+ */
+export async function revokeAppleToken(refreshToken: string): Promise<void> {
+  const body = new URLSearchParams({
+    client_id: env.APPLE_CLIENT_ID,
+    client_secret: env.APPLE_CLIENT_SECRET,
+    token: refreshToken,
+    token_type_hint: 'refresh_token',
+  });
+
+  const result = await fetch('https://appleid.apple.com/auth/revoke', {
+    method: 'POST',
+    body,
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+  });
+
+  if (!result.ok) {
+    const text = await result.text();
+    throw new Error(`Failed to revoke Apple token: ${result.status} - ${text}`);
+  }
+}

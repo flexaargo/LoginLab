@@ -1,14 +1,19 @@
-import type { Context, Next } from 'hono';
+import { createMiddleware } from 'hono/factory';
 import { verifyAccessToken } from '../utils/tokens';
 
-export async function authMiddleware(c: Context, next: Next) {
-  const token = c.req.header('Authorization')?.replace('Bearer ', '');
-  if (!token) return c.json({ error: 'Unauthorized' }, 401);
-
-  const decoded = verifyAccessToken(token);
-  if (!decoded) return c.json({ error: 'Invalid or expired token' }, 401);
-
-  c.set('userId', decoded.userId);
-
-  await next();
-}
+export const authMiddleware = createMiddleware<{ Variables: { userId: string } }>(
+  async (c, next) => {
+    const token = c.req
+      .header('Authorization')
+      ?.replace(/^Bearer\s+/i, '')
+      ?.trim();
+    if (!token) return c.json({ error: 'Unauthorized' }, 401);
+    try {
+      const decoded = verifyAccessToken(token);
+      c.set('userId', decoded.userId);
+    } catch {
+      return c.json({ error: 'Invalid or expired token' }, 401);
+    }
+    await next();
+  },
+);
