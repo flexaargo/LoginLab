@@ -6,6 +6,7 @@
 
 import Foundation
 import Observation
+import UIKit
 
 /// Manages the user session and provides access to the session.
 @Observable
@@ -15,6 +16,7 @@ public final class SessionManager {
 
   /// The account details for the current user.
   public private(set) var accountDetails: AccountDetails?
+  public private(set) var profileImage: UIImage?
 
   /// The current session details.
   private var userSession: UserSession?
@@ -27,6 +29,7 @@ public final class SessionManager {
 
   /// The storage for persisting session data.
   private let storage = SessionStorage()
+  private let profileImageStore = ProfileImageStore()
 
   /// Initializes the session manager with a networking client.
   init(networkingClientProvider: NetworkingClientProvider) {
@@ -36,6 +39,7 @@ public final class SessionManager {
       await initializeFromStorage()
       do {
         try await refreshTokensIfNeeded()
+        try await refreshCurrentUser()
       } catch {
         print("🚨 Error refreshing tokens on startup: \(error)")
       }
@@ -49,6 +53,7 @@ public final class SessionManager {
       // Load account details
       if let storedAccountDetails = try await storage.getAccountDetails() {
         accountDetails = storedAccountDetails
+        profileImage = await profileImageStore.loadImage(for: storedAccountDetails.userID)
       } else {
         print("⚠️ Account details not found in storage.")
       }
@@ -109,6 +114,7 @@ public final class SessionManager {
     // Keep access token in memory only
     self.accountDetails = accountDetails
     self.userSession = userSession
+    await refreshProfileImage(for: accountDetails)
   }
 
   /// Deletes the current user's account. Requires fresh Apple Sign In credentials.
@@ -125,8 +131,12 @@ public final class SessionManager {
       authorizationCode: credentials.authorizationCode,
       nonce: credentials.nonce
     )
+    if let userID = accountDetails?.userID {
+      await profileImageStore.removeImage(for: userID)
+    }
     try await storage.clear()
     accountDetails = nil
+    profileImage = nil
     userSession = nil
   }
 
@@ -135,12 +145,20 @@ public final class SessionManager {
     let networkingClient = networkingClientProvider.networkingClient
     if let refreshToken = userSession?.refreshToken {
       try await networkingClient.signOut(refreshToken: refreshToken.token)
+      if let userID = accountDetails?.userID {
+        await profileImageStore.removeImage(for: userID)
+      }
       try await storage.clear()
       accountDetails = nil
+      profileImage = nil
       userSession = nil
     } else {
+      if let userID = accountDetails?.userID {
+        await profileImageStore.removeImage(for: userID)
+      }
       try await storage.clear()
       accountDetails = nil
+      profileImage = nil
       userSession = nil
     }
   }
@@ -187,13 +205,14 @@ public final class SessionManager {
     let updatedAccountDetails = AccountDetails(
       userID: existingAccountDetails.userID,
       displayName: user.displayName,
-      email: existingAccountDetails.email,
+      email: user.email,
       name: user.fullName,
       profileImageUrl: user.profileImageUrl
     )
 
     try await storage.storeAccountDetails(updatedAccountDetails)
     accountDetails = updatedAccountDetails
+    await refreshProfileImage(for: updatedAccountDetails)
   }
 
   public func forceRefreshTokens() async throws {
@@ -215,5 +234,48 @@ public final class SessionManager {
     try await storage.storeRefreshToken(userSession.refreshToken.token, expiresAt: userSession.refreshToken.expiresAt)
 
     self.userSession = userSession
+  }
+
+  public func refreshCurrentUserInBackground() async {
+    do {
+      try await refreshCurrentUser()
+    } catch {
+      print("⚠️ Failed refreshing current user: \(error)")
+    }
+  }
+
+  public func refreshCurrentUser() async throws {
+    guard userSession != nil else { return }
+
+    let networkingClient = networkingClientProvider.networkingClient
+    try await refreshTokensIfNeeded()
+    guard let accessToken = userSession?.accessToken?.token else {
+      throw SessionManagerError.notAuthenticated
+    }
+
+    let user = try await networkingClient.fetchCurrentUser(accessToken: accessToken)
+    let updatedAccountDetails = AccountDetails(
+      userID: user.id,
+      displayName: user.displayName,
+      email: user.email,
+      name: user.fullName,
+      profileImageUrl: user.profileImageUrl
+    )
+
+    try await storage.storeAccountDetails(updatedAccountDetails)
+    accountDetails = updatedAccountDetails
+    await refreshProfileImage(for: updatedAccountDetails)
+  }
+
+  private func refreshProfileImage(for accountDetails: AccountDetails) async {
+    if let fetchedImage = await profileImageStore.fetchAndCacheImage(
+      from: accountDetails.profileImageUrl,
+      for: accountDetails.userID
+    ) {
+      profileImage = fetchedImage
+      return
+    }
+
+    profileImage = await profileImageStore.loadImage(for: accountDetails.userID)
   }
 }

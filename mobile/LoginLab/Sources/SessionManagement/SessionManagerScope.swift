@@ -8,6 +8,7 @@ import AuthenticationServices
 import SwiftUI
 
 public struct SessionManagerScope<Content: View>: View {
+  @Environment(\.scenePhase) private var scenePhase
   @State private var sessionManager: SessionManager
   private let content: Content
 
@@ -55,7 +56,17 @@ public struct SessionManagerScope<Content: View>: View {
           mimeType: mimeType
         )
       }
+      .task {
+        await sessionManager.refreshCurrentUserInBackground()
+      }
+      .onChange(of: scenePhase) { _, newPhase in
+        guard newPhase == .active else { return }
+        Task {
+          await sessionManager.refreshCurrentUserInBackground()
+        }
+      }
       .environment(sessionManager)
       .environment(\.accountDetails, sessionManager.accountDetails)
+      .environment(\.profileImage, sessionManager.profileImage)
   }
 }

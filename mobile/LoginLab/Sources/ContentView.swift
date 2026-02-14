@@ -6,26 +6,20 @@
 
 import SwiftUI
 
-enum LoginLabTab: Hashable {
-  case home
-  case acccount
-}
-
 struct ContentView: View {
-  @State private var selectedTab = LoginLabTab.home
+  @Environment(SessionManager.self) private var sessionManager
+  @State private var isAccountSheetPresented = false
 
   var body: some View {
-    TabView(selection: $selectedTab) {
-      Tab(value: .home) {
-        HomeView()
-      } label: {
-        Label("Home", systemImage: "house")
-      }
-
-      Tab(value: .acccount) {
-        AccountView()
-      } label: {
-        Label("Account", systemImage: "person")
+    HomeView {
+      isAccountSheetPresented = true
+    }
+    .sheet(isPresented: $isAccountSheetPresented) {
+      AccountView()
+    }
+    .onChange(of: sessionManager.isAuthenticated) { _, isAuthenticated in
+      if !isAuthenticated {
+        isAccountSheetPresented = false
       }
     }
   }

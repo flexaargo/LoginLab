@@ -6,6 +6,7 @@
 
 import Foundation
 import SwiftUI
+import UIKit
 
 // MARK: - AccountDetails
 
@@ -21,6 +22,7 @@ public nonisolated struct AccountDetails: Hashable, Sendable {
 
 public extension EnvironmentValues {
   @Entry var accountDetails: AccountDetails?
+  @Entry var profileImage: UIImage?
 }
 
 // MARK: - Preview Helpers

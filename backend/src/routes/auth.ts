@@ -2,7 +2,7 @@ import { Hono, type Context } from 'hono';
 import z from 'zod';
 import { db } from '../db';
 import { and, eq } from 'drizzle-orm';
-import { identities } from '../db/schema';
+import { identities, users } from '../db/schema';
 import { exchangeAppleAuthorizationCode, verifyAppleIdentityToken } from '../utils/apple';
 import { authMiddleware } from '../middleware/auth';
 import {
@@ -284,6 +284,25 @@ app.patch('/profile', authMiddleware, async (c) => {
       return c.json({ error: message }, 404);
     }
     console.error('Update profile error:', message);
+    return c.json({ error: message }, 500);
+  }
+});
+
+app.get('/me', authMiddleware, async (c) => {
+  try {
+    const userId = c.var.userId;
+    const user = await db.query.users.findFirst({
+      where: eq(users.id, userId),
+    });
+
+    if (!user) {
+      return c.json({ error: 'User not found' }, 404);
+    }
+
+    return c.json({ user: await toUserResponse(user) });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Fetch current user error:', message);
     return c.json({ error: message }, 500);
   }
 });

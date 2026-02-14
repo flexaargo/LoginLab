@@ -10,6 +10,7 @@ import UIKit
 struct EditProfileSheet: View {
   @Environment(\.dismiss) private var dismiss
   @Environment(\.accountDetails) private var accountDetails
+  @Environment(\.profileImage) private var cachedProfileImage
   @Environment(\.updateProfile) private var updateProfile
 
   private let initialName: String
@@ -35,6 +36,7 @@ struct EditProfileSheet: View {
     NavigationStack {
       EditProfileSheetForm(
         pendingProfileImage: pendingProfileImage,
+        cachedProfileImage: cachedProfileImage,
         profileImageUrl: accountDetails?.profileImageUrl,
         isPerformingMutatingAction: isPerformingMutatingAction,
         initialName: initialName,

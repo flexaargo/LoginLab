@@ -9,6 +9,7 @@ import UIKit
 
 struct EditProfileSheetForm: View {
   let pendingProfileImage: UIImage?
+  let cachedProfileImage: UIImage?
   let profileImageUrl: String?
   let isPerformingMutatingAction: Bool
   let initialName: String
@@ -21,6 +22,7 @@ struct EditProfileSheetForm: View {
     Form {
       EditProfileImageSection(
         pendingProfileImage: pendingProfileImage,
+        cachedProfileImage: cachedProfileImage,
         profileImageUrl: profileImageUrl,
         isPerformingMutatingAction: isPerformingMutatingAction,
         onEditImageTapped: onEditImageTapped
@@ -39,6 +41,7 @@ struct EditProfileSheetForm: View {
 
 private struct EditProfileImageSection: View {
   let pendingProfileImage: UIImage?
+  let cachedProfileImage: UIImage?
   let profileImageUrl: String?
   let isPerformingMutatingAction: Bool
   let onEditImageTapped: () -> Void
@@ -54,7 +57,7 @@ private struct EditProfileImageSection: View {
     Section {
       VStack(spacing: 16) {
         ProfileImageView(
-          image: pendingProfileImage,
+          image: pendingProfileImage ?? cachedProfileImage,
           profileImageUrl: profileImageUrl
         )
         .frame(
@@ -79,6 +82,7 @@ private struct EditProfileImageSection: View {
                 )
                 .background(.tint.quinary, in: .circle)
             }
+            .disabled(isPerformingMutatingAction)
           }
           .offset(
             x: Constants.profileImageRadius * cos(.pi / 4),
@@ -119,6 +123,7 @@ private struct EditProfileTextSection: View {
 #Preview("Profile Image Section") {
   EditProfileImageSection(
     pendingProfileImage: nil,
+    cachedProfileImage: nil,
     profileImageUrl: nil,
     isPerformingMutatingAction: false
   ) {}

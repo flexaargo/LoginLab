@@ -8,9 +8,11 @@ import SwiftUI
 import UIKit
 
 struct AccountView: View {
+  @Environment(\.dismiss) private var dismiss
   @Environment(\.signOut) private var signOut
   @Environment(\.deleteAccount) private var deleteAccount
   @Environment(\.accountDetails) private var accountDetails
+  @Environment(\.profileImage) private var profileImage
 
   /// A flag to prevent multiple mutating actions from being performed concurrently.
   @State private var isPerformingMutatingAction = false
@@ -26,8 +28,11 @@ struct AccountView: View {
         Form {
           Section {
             VStack(spacing: 12) {
-              ProfileImageView(profileImageUrl: accountDetails.profileImageUrl)
-                .frame(width: 96, height: 96)
+              ProfileImageView(
+                image: profileImage,
+                profileImageUrl: accountDetails.profileImageUrl
+              )
+              .frame(width: 96, height: 96)
 
               VStack {
                 Text(accountDetails.name)
@@ -102,6 +107,13 @@ struct AccountView: View {
               }
             } message: {
               Text("This will permanently delete your account and all associated data. This action cannot be undone.")
+            }
+          }
+        }
+        .toolbar {
+          ToolbarItem {
+            Button(role: .close) {
+              dismiss()
             }
           }
         }
