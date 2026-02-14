@@ -16,6 +16,7 @@ actor SessionStorage {
     static let displayName = "com.loginhub.session.displayName"
     static let email = "com.loginhub.session.email"
     static let name = "com.loginhub.session.name"
+    static let profileImageUrl = "com.loginhub.session.profileImageUrl"
   }
 
   private let service: String
@@ -54,6 +55,11 @@ actor SessionStorage {
     try store(key: Keys.displayName, value: accountDetails.displayName)
     try store(key: Keys.email, value: accountDetails.email)
     try store(key: Keys.name, value: accountDetails.name)
+    if let profileImageUrl = accountDetails.profileImageUrl {
+      try store(key: Keys.profileImageUrl, value: profileImageUrl)
+    } else {
+      try delete(key: Keys.profileImageUrl)
+    }
   }
 
   /// Retrieves stored account details.
@@ -68,11 +74,12 @@ actor SessionStorage {
       return nil
     }
 
-    return AccountDetails(
+    return try AccountDetails(
       userID: userID,
       displayName: displayName,
       email: email,
-      name: name
+      name: name,
+      profileImageUrl: retrieve(key: Keys.profileImageUrl)
     )
   }
 
@@ -84,6 +91,7 @@ actor SessionStorage {
     try delete(key: Keys.displayName)
     try delete(key: Keys.email)
     try delete(key: Keys.name)
+    try delete(key: Keys.profileImageUrl)
   }
 
   // MARK: - Keychain Helpers

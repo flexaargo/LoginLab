@@ -87,7 +87,8 @@ public final class SessionManager {
       userID: response.user.id,
       displayName: response.user.displayName,
       email: response.user.email,
-      name: response.user.fullName
+      name: response.user.fullName,
+      profileImageUrl: response.user.profileImageUrl
     )
 
     let userSession = UserSession(
@@ -156,6 +157,43 @@ public final class SessionManager {
     if needsRefresh {
       try await forceRefreshTokens()
     }
+  }
+
+  /// Updates the user's profile. All parameters are optional; only provided values are updated.
+  public func updateProfile(
+    fullName: String? = nil,
+    displayName: String? = nil,
+    imageData: Data? = nil,
+    mimeType: String? = nil
+  ) async throws {
+    let networkingClient = networkingClientProvider.networkingClient
+    try await refreshTokensIfNeeded()
+    guard let accessToken = userSession?.accessToken?.token else {
+      throw SessionManagerError.notAuthenticated
+    }
+
+    let user = try await networkingClient.updateProfile(
+      accessToken: accessToken,
+      fullName: fullName,
+      displayName: displayName,
+      imageData: imageData,
+      mimeType: mimeType
+    )
+
+    guard let existingAccountDetails = accountDetails else {
+      return
+    }
+
+    let updatedAccountDetails = AccountDetails(
+      userID: existingAccountDetails.userID,
+      displayName: user.displayName,
+      email: existingAccountDetails.email,
+      name: user.fullName,
+      profileImageUrl: user.profileImageUrl
+    )
+
+    try await storage.storeAccountDetails(updatedAccountDetails)
+    accountDetails = updatedAccountDetails
   }
 
   public func forceRefreshTokens() async throws {

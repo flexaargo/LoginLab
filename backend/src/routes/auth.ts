@@ -11,10 +11,36 @@ import {
   deleteAccount,
   refreshSession,
   revokeSession,
+  updateProfile,
   updateIdentityRefreshToken,
 } from '../services/auth.service';
+import { profileImageUrlFromKey, uploadProfileImage } from '../services/profile-image.service';
 
 const app = new Hono();
+
+type UserResponse = {
+  id: string;
+  fullName: string;
+  email: string;
+  displayName: string;
+  profileImageUrl: string | null;
+};
+
+async function toUserResponse(user: {
+  id: string;
+  fullName: string;
+  email: string;
+  displayName: string;
+  profileImageKey: string | null;
+}): Promise<UserResponse> {
+  return {
+    id: user.id,
+    fullName: user.fullName,
+    email: user.email,
+    displayName: user.displayName,
+    profileImageUrl: await profileImageUrlFromKey(user.profileImageKey),
+  };
+}
 
 /**
  * Extracts the client IP address from the request.
@@ -106,7 +132,7 @@ app.post('/signin', async (c) => {
         deviceName: c.req.header('X-Device-Name'),
         ipAddress: getClientIp(c),
       });
-      return c.json({ user, ...session }, 201);
+      return c.json({ user: await toUserResponse(user), ...session }, 201);
     }
 
     // Handle existing user sign-in
@@ -119,7 +145,7 @@ app.post('/signin', async (c) => {
       ipAddress: getClientIp(c),
     });
 
-    return c.json({ user: existingIdentity.user, ...session });
+    return c.json({ user: await toUserResponse(existingIdentity.user), ...session });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return c.json({ error: 'Invalid request body', details: error.issues }, 400);
@@ -198,6 +224,13 @@ const signOutSchema = z.object({
   refreshToken: z.string().min(1),
 });
 
+const updateProfileSchema = z.object({
+  fullName: z.string().min(1).max(256).nullish(),
+  displayName: z.string().min(1).max(64).nullish(),
+  imageBase64: z.string().min(1).max(8_000_000).nullish(),
+  imageMimeType: z.enum(['image/png', 'image/jpeg', 'image/jpg']).nullish(),
+});
+
 app.post('/signout', async (c) => {
   try {
     const body = signOutSchema.parse(await c.req.json());
@@ -217,6 +250,40 @@ app.post('/signout', async (c) => {
     }
     const message = error instanceof Error ? error.message : 'Unknown error';
     console.error('Sign-out error:', message);
+    return c.json({ error: message }, 500);
+  }
+});
+
+app.patch('/profile', authMiddleware, async (c) => {
+  try {
+    const body = updateProfileSchema.parse(await c.req.json());
+    const userId = c.var.userId;
+
+    const hasImageFields = body.imageBase64 != null || body.imageMimeType != null;
+    if (hasImageFields && !(body.imageBase64 && body.imageMimeType)) {
+      return c.json({ error: 'imageBase64 and imageMimeType must be provided together' }, 400);
+    }
+
+    const profileImageKey =
+      body.imageBase64 && body.imageMimeType
+        ? await uploadProfileImage(userId, body.imageBase64, body.imageMimeType)
+        : undefined;
+
+    const user = await updateProfile(userId, {
+      fullName: body.fullName ?? undefined,
+      displayName: body.displayName ?? undefined,
+      profileImageKey,
+    });
+    return c.json({ user: await toUserResponse(user) });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return c.json({ error: 'Invalid request body', details: error.issues }, 400);
+    }
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    if (message === 'User not found') {
+      return c.json({ error: message }, 404);
+    }
+    console.error('Update profile error:', message);
     return c.json({ error: message }, 500);
   }
 });

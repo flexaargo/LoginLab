@@ -47,6 +47,14 @@ public struct SessionManagerScope<Content: View>: View {
 
         try await sessionManager.deleteAccount(credentials: credentials)
       }
+      .onUpdateProfile { fullName, displayName, imageData, mimeType in
+        try await sessionManager.updateProfile(
+          fullName: fullName,
+          displayName: displayName,
+          imageData: imageData,
+          mimeType: mimeType
+        )
+      }
       .environment(sessionManager)
       .environment(\.accountDetails, sessionManager.accountDetails)
   }

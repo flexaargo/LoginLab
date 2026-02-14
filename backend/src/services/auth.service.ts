@@ -236,6 +236,43 @@ export async function deleteAccount(options: DeleteAccountOptions): Promise<void
   await db.delete(users).where(eq(users.id, userId));
 }
 
+interface UpdateProfileOptions {
+  fullName?: string;
+  displayName?: string;
+  profileImageKey?: string;
+}
+
+/**
+ * Updates a user's profile. All fields are optional; only provided fields are updated.
+ */
+export async function updateProfile(userId: string, options: UpdateProfileOptions) {
+  const updates: Partial<{ fullName: string; displayName: string; profileImageKey: string }> = {};
+  if (options.fullName != null) updates.fullName = options.fullName;
+  if (options.displayName != null) updates.displayName = options.displayName;
+  if (options.profileImageKey != null) updates.profileImageKey = options.profileImageKey;
+
+  if (Object.keys(updates).length === 0) {
+    const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+    if (!user) throw new Error('User not found');
+    return user;
+  }
+
+  const [user] = await db
+    .update(users)
+    .set({
+      ...updates,
+      updatedAt: new Date(),
+    })
+    .where(eq(users.id, userId))
+    .returning();
+
+  if (!user) {
+    throw new Error('User not found');
+  }
+
+  return user;
+}
+
 /**
  * Revokes a session by its refresh token.
  * Returns true if a session was revoked, false if the token was not found or already revoked.

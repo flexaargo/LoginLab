@@ -8,7 +8,8 @@ export const users = pgTable('users', {
   email: text('email').notNull().unique(),
   displayName: text('display_name').notNull(),
 
-  profileImageUrl: text('profile_image_url'),
+  // Legacy column name retained for backward compatibility; value now stores object key.
+  profileImageKey: text('profile_image_url'),
 
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),

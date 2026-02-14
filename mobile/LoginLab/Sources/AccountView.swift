@@ -5,6 +5,7 @@
 //
 
 import SwiftUI
+import UIKit
 
 struct AccountView: View {
   @Environment(\.signOut) private var signOut
@@ -17,24 +18,35 @@ struct AccountView: View {
   /// A flag to show the delete account confirmation dialog.
   @State private var isDeletingAccount = false
 
+  @State private var isEditProfileSheetPresented = false
+
   var body: some View {
     if let accountDetails {
       NavigationStack {
         Form {
           Section {
-            VStack {
-              Circle()
+            VStack(spacing: 12) {
+              ProfileImageView(profileImageUrl: accountDetails.profileImageUrl)
                 .frame(width: 96, height: 96)
-                .foregroundStyle(.gray.quinary)
 
-              Text(accountDetails.name)
-                .font(.title)
-                .fontWeight(.medium)
-                .multilineTextAlignment(.center)
+              VStack {
+                Text(accountDetails.name)
+                  .font(.title)
+                  .fontWeight(.medium)
+                  .multilineTextAlignment(.center)
 
-              Text(accountDetails.displayName)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
+                Text(accountDetails.displayName)
+                  .foregroundStyle(.secondary)
+                  .multilineTextAlignment(.center)
+              }
+
+              Button {
+                isEditProfileSheetPresented = true
+              } label: {
+                Text("Edit Profile")
+              }
+              .buttonStyle(.bordered)
+              .disabled(isPerformingMutatingAction)
             }
             .frame(maxWidth: .infinity, alignment: .center)
           }
@@ -66,6 +78,7 @@ struct AccountView: View {
               }
               .foregroundStyle(.red)
             }
+            .disabled(isPerformingMutatingAction)
 
             Button(role: .destructive) {
               isDeletingAccount = true
@@ -78,6 +91,7 @@ struct AccountView: View {
               }
               .foregroundStyle(.red)
             }
+            .disabled(isPerformingMutatingAction)
             .alert("Delete account", isPresented: $isDeletingAccount) {
               Button("Delete", role: .destructive) {
                 performDeleteAccount()
@@ -91,6 +105,9 @@ struct AccountView: View {
             }
           }
         }
+      }
+      .sheet(isPresented: $isEditProfileSheetPresented) {
+        EditProfileSheet(accountDetails: accountDetails)
       }
     }
   }

@@ -14,6 +14,7 @@ public nonisolated struct AccountDetails: Hashable, Sendable {
   public let displayName: String
   public let email: String
   public let name: String
+  public let profileImageUrl: String?
 }
 
 // MARK: - Environment Value
@@ -29,6 +30,7 @@ extension AccountDetails {
     userID: UUID().uuidString,
     displayName: "testuser",
     email: "test@example.com",
-    name: "Test User"
+    name: "Test User",
+    profileImageUrl: nil
   )
 }

@@ -27,6 +27,7 @@ nonisolated struct UserResponse: Decodable {
   let fullName: String
   let email: String
   let displayName: String
+  let profileImageUrl: String?
 }
 
 extension NetworkingClient {
