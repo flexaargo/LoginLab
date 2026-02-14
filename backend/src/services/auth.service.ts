@@ -7,6 +7,7 @@ import {
   verifyAppleIdentityToken,
 } from '../utils/apple';
 import { generateAccessToken, generateRefreshToken, hashRefreshToken } from '../utils/tokens';
+import { deleteProfileImagesForUser } from './profile-image.service';
 
 interface CreateUserAndIdentityOptions {
   fullName: string;
@@ -206,7 +207,8 @@ interface DeleteAccountOptions {
 /**
  * Deletes the user's account.
  * 1. Revokes the Apple token first (so the user's Apple ID is unlinked).
- * 2. Deletes the user from our DB (identities and sessions cascade).
+ * 2. Deletes profile images from object storage.
+ * 3. Deletes the user from our DB (identities and sessions cascade).
  * If Apple revoke fails, we throw and do not delete. If delete fails after revoke,
  * we have a partial state (Apple unlinked, user still in DB); callers may retry.
  */
@@ -233,6 +235,7 @@ export async function deleteAccount(options: DeleteAccountOptions): Promise<void
   }
 
   await revokeAppleToken(tokenResponse.refresh_token);
+  await deleteProfileImagesForUser(userId);
   await db.delete(users).where(eq(users.id, userId));
 }
 

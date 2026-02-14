@@ -38,13 +38,35 @@ export async function uploadProfileImage(
 ): Promise<string> {
   const bytes = parseBase64Image(imageBase64);
   const ext = extensionForMimeType(mimeType);
-  const key = `profile-images/${userId}/${crypto.randomUUID()}.${ext}`;
+  const key = `${profileImagesPrefix(userId)}${crypto.randomUUID()}.${ext}`;
 
   await s3.write(key, bytes, {
     type: mimeType,
   });
 
   return key;
+}
+
+function profileImagesPrefix(userId: string): string {
+  return `profile-images/${userId}/`;
+}
+
+export async function deleteProfileImagesForUser(userId: string): Promise<void> {
+  const prefix = profileImagesPrefix(userId);
+  let continuationToken: string | undefined;
+
+  do {
+    const page = await s3.list({
+      prefix,
+      continuationToken,
+      maxKeys: 1000,
+    });
+
+    const keys = page.contents?.map((object) => object.key) ?? [];
+    await Promise.all(keys.map((key) => s3.delete(key)));
+
+    continuationToken = page.nextContinuationToken;
+  } while (continuationToken);
 }
 
 export async function profileImageUrlFromKey(
