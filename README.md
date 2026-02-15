@@ -1,8 +1,8 @@
-# Login Lab
-
 <p align="center">
   <img src="resources/LoginLabIcon.png" alt="Login Lab Icon" width="128" height="128" />
 </p>
+
+# Login Lab
 
 `Login Lab` is a reference project for building Sign in with Apple with:
 
