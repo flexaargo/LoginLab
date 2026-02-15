@@ -37,6 +37,7 @@ struct AccountView: View {
             }
           }
         }
+        .accountDynamicTitle(accountDetails.name)
       }
       .sheet(isPresented: $isEditProfileSheetPresented) {
         EditProfileSheet(accountDetails: accountDetails)

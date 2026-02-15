@@ -28,6 +28,10 @@ extension AccountView {
                 .font(.title)
                 .fontWeight(.medium)
                 .multilineTextAlignment(.center)
+                .anchorPreference(
+                  key: BoundsPreferenceKey.self,
+                  value: .bounds
+                ) { $0 }
 
               Text(accountDetails.displayName)
                 .foregroundStyle(.secondary)
@@ -65,8 +69,15 @@ extension EnvironmentValues {
 }
 
 #Preview {
-  Form {
-    AccountView.ProfileSection()
-      .environment(\.accountDetails, .previewUser)
+  NavigationStack {
+    Form {
+      AccountView.ProfileSection()
+        .environment(\.accountDetails, .previewUser)
+    }
+    .toolbar {
+      ToolbarItem(placement: .cancellationAction) {
+        Button(role: .close) {}
+      }
+    }
   }
 }
