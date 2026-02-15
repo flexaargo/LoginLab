@@ -51,6 +51,7 @@ struct AccountView: View {
                 Text("Edit Profile")
               }
               .buttonStyle(.bordered)
+              .font(.caption)
               .disabled(isPerformingMutatingAction)
             }
             .frame(maxWidth: .infinity, alignment: .center)
@@ -111,7 +112,7 @@ struct AccountView: View {
           }
         }
         .toolbar {
-          ToolbarItem {
+          ToolbarItem(placement: .cancellationAction) {
             Button(role: .close) {
               dismiss()
             }

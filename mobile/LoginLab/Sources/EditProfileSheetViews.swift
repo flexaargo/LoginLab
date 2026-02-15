@@ -49,7 +49,8 @@ private struct EditProfileImageSection: View {
   private enum Constants {
     static let profileImageDiameter: CGFloat = 128
     static let profileImageRadius: CGFloat = profileImageDiameter / 2
-    static let editButtonSize: CGFloat = 28
+    static let editButtonSize: CGFloat = 32
+    static let editButtonFontSize: CGFloat = 16
     static let editButtonMaskBorderWidth: CGFloat = 8
   }
 
@@ -75,7 +76,9 @@ private struct EditProfileImageSection: View {
 
             Button(action: onEditImageTapped) {
               Image(systemName: "camera")
-                .font(.system(size: 12, weight: .medium))
+                .font(
+                  .system(size: Constants.editButtonFontSize, weight: .medium)
+                )
                 .frame(
                   width: Constants.editButtonSize,
                   height: Constants.editButtonSize
