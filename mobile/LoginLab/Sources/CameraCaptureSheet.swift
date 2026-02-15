@@ -117,19 +117,41 @@ private struct CameraPreviewContainer: View {
 
 private struct CameraShutterButton: View {
   let action: () -> Void
+  @Environment(\.colorScheme) private var colorScheme
+
+  private var outerStrokeColor: Color {
+    colorScheme == .dark ? .white.opacity(0.65) : .black.opacity(0.35)
+  }
+
+  private var innerBorderColor: Color {
+    colorScheme == .dark ? .black.opacity(0.25) : .black.opacity(0.12)
+  }
 
   var body: some View {
     Button(action: action) {
       ZStack {
         Circle()
-          .fill(.white)
-          .frame(width: 76, height: 76)
+          .fill(colorScheme == .dark ? .clear : .black.opacity(0.06))
+          .frame(width: 90, height: 90)
 
         Circle()
-          .strokeBorder(.white.opacity(0.65), lineWidth: 4)
+          .fill(.white)
+          .frame(width: 76, height: 76)
+          .overlay {
+            Circle()
+              .strokeBorder(innerBorderColor, lineWidth: 1)
+          }
+
+        Circle()
+          .strokeBorder(outerStrokeColor, lineWidth: 4)
           .frame(width: 90, height: 90)
       }
       .frame(width: 90, height: 90)
+      .shadow(
+        color: colorScheme == .dark ? .clear : .black.opacity(0.14),
+        radius: 6,
+        y: 2
+      )
     }
     .accessibilityLabel("Capture")
     .contentShape(Circle())
