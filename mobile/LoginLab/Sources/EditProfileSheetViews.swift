@@ -16,7 +16,8 @@ struct EditProfileSheetForm: View {
   @Binding var name: String
   let initialDisplayName: String
   @Binding var displayName: String
-  let onEditImageTapped: () -> Void
+  let onChoosePhotoTapped: () -> Void
+  let onTakePhotoTapped: () -> Void
 
   var body: some View {
     Form {
@@ -25,7 +26,8 @@ struct EditProfileSheetForm: View {
         cachedProfileImage: cachedProfileImage,
         profileImageUrl: profileImageUrl,
         isPerformingMutatingAction: isPerformingMutatingAction,
-        onEditImageTapped: onEditImageTapped
+        onChoosePhotoTapped: onChoosePhotoTapped,
+        onTakePhotoTapped: onTakePhotoTapped
       )
 
       EditProfileTextSection(
@@ -44,7 +46,8 @@ private struct EditProfileImageSection: View {
   let cachedProfileImage: UIImage?
   let profileImageUrl: String?
   let isPerformingMutatingAction: Bool
-  let onEditImageTapped: () -> Void
+  let onChoosePhotoTapped: () -> Void
+  let onTakePhotoTapped: () -> Void
 
   private enum Constants {
     static let profileImageDiameter: CGFloat = 128
@@ -57,47 +60,57 @@ private struct EditProfileImageSection: View {
   var body: some View {
     Section {
       VStack(spacing: 16) {
-        ProfileImageView(
-          image: pendingProfileImage ?? cachedProfileImage,
-          profileImageUrl: profileImageUrl
-        )
-        .frame(
-          width: Constants.profileImageDiameter,
-          height: Constants.profileImageDiameter
-        )
-        .overlay {
-          ZStack {
-            Circle()
-              .frame(
-                width: Constants.editButtonSize + Constants.editButtonMaskBorderWidth,
-                height: Constants.editButtonSize + Constants.editButtonMaskBorderWidth
-              )
-              .blendMode(.destinationOut)
-
-            Button(action: onEditImageTapped) {
-              Image(systemName: "camera")
-                .font(
-                  .system(size: Constants.editButtonFontSize, weight: .medium)
-                )
-                .frame(
-                  width: Constants.editButtonSize,
-                  height: Constants.editButtonSize
-                )
-                .background(.tint.quinary, in: .circle)
-            }
-            .disabled(isPerformingMutatingAction)
+        Menu {
+          Button(action: onChoosePhotoTapped) {
+            Label("Choose Photo", systemImage: "photo.on.rectangle")
           }
-          .offset(
-            x: Constants.profileImageRadius * cos(.pi / 4),
-            y: Constants.profileImageRadius * sin(.pi / 4)
-          )
+
+          Button(action: onTakePhotoTapped) {
+            Label("Take Photo", systemImage: "camera")
+          }
+        } label: {
+          profileImageMenuLabel
         }
-        .compositingGroup()
+        .disabled(isPerformingMutatingAction)
       }
       .frame(maxWidth: .infinity, alignment: .center)
       .listRowInsets(.init())
       .listRowBackground(Color.clear)
     }
+  }
+
+  private var profileImageMenuLabel: some View {
+    ProfileImageView(
+      image: pendingProfileImage ?? cachedProfileImage,
+      profileImageUrl: profileImageUrl
+    )
+    .frame(
+      width: Constants.profileImageDiameter,
+      height: Constants.profileImageDiameter
+    )
+    .overlay {
+      ZStack {
+        Circle()
+          .frame(
+            width: Constants.editButtonSize + Constants.editButtonMaskBorderWidth,
+            height: Constants.editButtonSize + Constants.editButtonMaskBorderWidth
+          )
+          .blendMode(.destinationOut)
+
+        Image(systemName: "camera")
+          .font(.system(size: Constants.editButtonFontSize, weight: .medium))
+          .frame(
+            width: Constants.editButtonSize,
+            height: Constants.editButtonSize
+          )
+          .background(.tint.quinary, in: .circle)
+      }
+      .offset(
+        x: Constants.profileImageRadius * cos(.pi / 4),
+        y: Constants.profileImageRadius * sin(.pi / 4)
+      )
+    }
+    .compositingGroup()
   }
 }
 
@@ -128,6 +141,8 @@ private struct EditProfileTextSection: View {
     pendingProfileImage: nil,
     cachedProfileImage: nil,
     profileImageUrl: nil,
-    isPerformingMutatingAction: false
-  ) {}
+    isPerformingMutatingAction: false,
+    onChoosePhotoTapped: {},
+    onTakePhotoTapped: {}
+  )
 }

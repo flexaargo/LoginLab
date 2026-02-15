@@ -61,7 +61,7 @@ struct CircularImageCropSheet: View {
       .navigationTitle("Crop Photo")
       .navigationBarTitleDisplayMode(.inline)
       .interactiveDismissDisabled(true)
-      .presentationDetents([.medium])
+      .presentationDetents([.fraction(3 / 5)])
       .photosPicker(
         isPresented: $isPhotoPickerPresented,
         selection: $selectedPhotoItem,

@@ -15,5 +15,7 @@
 			</dict>
 		</dict>
 	</dict>
+	<key>NSCameraUsageDescription</key>
+	<string>Take a profile photo with your camera.</string>
 </dict>
 </plist>

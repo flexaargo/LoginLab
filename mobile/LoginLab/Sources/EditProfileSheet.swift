@@ -8,6 +8,11 @@ import SwiftUI
 import UIKit
 
 struct EditProfileSheet: View {
+  private enum SheetRoute: Equatable {
+    case photoLibrary
+    case cameraCapture
+  }
+
   @Environment(\.dismiss) private var dismiss
   @Environment(\.accountDetails) private var accountDetails
   @Environment(\.profileImage) private var cachedProfileImage
@@ -18,7 +23,7 @@ struct EditProfileSheet: View {
 
   @State private var name: String
   @State private var displayName: String
-  @State private var isPhotoPickerPresented = false
+  @State private var activeSheetRoute: SheetRoute?
   @State private var isPerformingMutatingAction = false
   @State private var pendingProfileImageData: Data?
   @State private var pendingProfileImageMimeType: String?
@@ -43,8 +48,11 @@ struct EditProfileSheet: View {
         name: $name,
         initialDisplayName: initialDisplayName,
         displayName: $displayName,
-        onEditImageTapped: {
-          isPhotoPickerPresented = true
+        onChoosePhotoTapped: {
+          present(sheet: .photoLibrary)
+        },
+        onTakePhotoTapped: {
+          present(sheet: .cameraCapture)
         }
       )
       .scrollBounceBehavior(.basedOnSize)
@@ -66,8 +74,18 @@ struct EditProfileSheet: View {
         }
       }
     }
+    .sheet(isPresented: isCameraCapturePresentedBinding) {
+      CameraCaptureSheet(
+        onCapture: { capturedImage in
+          applyCapturedCameraPhoto(capturedImage)
+        },
+        onError: { message in
+          errorMessage = message
+        }
+      )
+    }
     .profilePhotoPicker(
-      isPresented: $isPhotoPickerPresented,
+      isPresented: isPhotoPickerPresentedBinding,
       onImageCropped: { imageData, mimeType in
         pendingProfileImageData = imageData
         pendingProfileImageMimeType = mimeType
@@ -96,6 +114,52 @@ struct EditProfileSheet: View {
         Text(errorMessage ?? "Unknown error")
       }
     )
+  }
+
+  private var isPhotoPickerPresentedBinding: Binding<Bool> {
+    Binding(
+      get: { activeSheetRoute == .photoLibrary },
+      set: { isPresented in
+        if isPresented {
+          activeSheetRoute = .photoLibrary
+        } else if activeSheetRoute == .photoLibrary {
+          activeSheetRoute = nil
+        }
+      }
+    )
+  }
+
+  private var isCameraCapturePresentedBinding: Binding<Bool> {
+    Binding(
+      get: { activeSheetRoute == .cameraCapture },
+      set: { isPresented in
+        if isPresented {
+          activeSheetRoute = .cameraCapture
+        } else if activeSheetRoute == .cameraCapture {
+          activeSheetRoute = nil
+        }
+      }
+    )
+  }
+
+  private func present(sheet route: SheetRoute) {
+    activeSheetRoute = route
+  }
+
+  private func applyCapturedCameraPhoto(_ image: UIImage) {
+    guard let payload = CropImagePayloadRenderer.makePayload(
+      image: image,
+      zoomScale: 1,
+      offset: .zero,
+      cropCanvasSize: 300
+    ) else {
+      errorMessage = "Unable to process captured photo. Please try again."
+      return
+    }
+
+    pendingProfileImageData = payload.data
+    pendingProfileImageMimeType = payload.mimeType
+    pendingProfileImage = UIImage(data: payload.data)
   }
 
   private func performSave() {
